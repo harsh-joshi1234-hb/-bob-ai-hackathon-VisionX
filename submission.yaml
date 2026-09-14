@@ -9,51 +9,47 @@
 # =============================================================================
 
 team:
-  name: ""                             # REQUIRED — e.g., "Orion Squad"
-  track: ""                            # REQUIRED — one of: AI | DevOps | Sustainability | Open
+  name: "VisionX"                             # REQUIRED — e.g., "Orion Squad"
+  track: "AI"                            # REQUIRED — one of: AI | DevOps | Sustainability | Open
   lead:
-    name: ""                           # REQUIRED — e.g., "Alice Chen"
-    email: ""                          # REQUIRED — e.g., "alice.chen@ibm.com"
+    name: "Harsh Joshi"                           # REQUIRED — e.g., "Alice Chen"
+    email: "harsh@ibm.com"                          # REQUIRED — e.g., "alice.chen@ibm.com"
   members:
-    - name: ""                         # REQUIRED — Team member 1
-      email: ""
+    - name: "Harsh Joshi"                         # REQUIRED — Team member 1
+      email: "harsh@ibm.com"
     - name: ""                         # Add more members by copying the two lines above
       email: ""
     - name: ""
       email: ""
 
 submission:
-  title: ""                            # REQUIRED — Project display name, e.g., "SmartOps Dashboard"
+  title: "S1 Semiconductor AI Analyzer"                            # REQUIRED — Project display name, e.g., "SmartOps Dashboard"
 
   problem_statement: >                 # REQUIRED — 1-3 sentences. What problem? Who has it?
-    Replace this text with a concise description of the real-world problem
-    your project addresses and who experiences it.
+    Semiconductor manufacturing yields are critically impacted by micro-defects and sensor anomalies that are difficult to trace across disparate datasets. Engineers struggle to rapidly correlate wafer defect patterns with out-of-control process sensors, leading to prolonged downtimes and reduced manufacturing efficiency.
 
   solution_summary: >                  # REQUIRED — 1-3 sentences. What did you build?
-    Replace this text with a clear description of your solution
-    and how it addresses the problem above.
+    We built a multimodal AI analysis pipeline that seamlessly integrates wafer map defect classification with sensor parameter risk prediction. Our solution dynamically ranks root causes using SHAP and leverages an IBM watsonx.ai LLM layer (IBM Bob) to generate actionable, human-readable insights for process engineers.
 
   key_features:                        # REQUIRED — List 3 to 5 specific features you implemented
-    - ""                               # e.g., "Real-time pipeline anomaly detection using watsonx.ai"
-    - ""
-    - ""
-    - ""                               # optional 4th
-    - ""                               # optional 5th
+    - "Multimodal Orchestration: Combines a PyTorch CNN for Wafer Map Defects and an XGBoost VotingClassifier for Process Risk."
+    - "Root Cause Analysis: Calculates SHAP feature contributions dynamically to isolate failing sensors."
+    - "Upcoming Batch Risk Monitoring: Pre-screens scheduled lots and flags elevated failure probabilities."
+    - "IBM Bob Intelligence Layer: Translates strict ML metrics into executive summaries without hallucinating causal claims."
+    - "Transparent Data Mapping: Demonstrates integration across independent public datasets using application-level demo lots."
 
   tech_stack:
-    languages: []                      # REQUIRED — e.g., ["Python", "TypeScript"]
-    frameworks: []                     # e.g., ["FastAPI", "React"]
-    ibm_technologies: []               # e.g., ["watsonx.ai", "IBM Bob", "IBM Cloud Functions"]
-    databases: []                      # e.g., ["PostgreSQL", "Redis"]
-    other: []                          # e.g., ["Docker", "GitHub Actions", "Slack API"]
+    languages: ["Python", "TypeScript"]                      # REQUIRED — e.g., ["Python", "TypeScript"]
+    frameworks: ["FastAPI", "React", "PyTorch", "Scikit-learn", "XGBoost"]                     # e.g., ["FastAPI", "React"]
+    ibm_technologies: ["watsonx.ai (IBM Bob)"]               # e.g., ["watsonx.ai", "IBM Bob", "IBM Cloud Functions"]
+    databases: ["PostgreSQL"]                      # e.g., ["PostgreSQL", "Redis"]
+    other: ["Tailwind CSS", "SHAP", "Recharts"]                          # e.g., ["Docker", "GitHub Actions", "Slack API"]
 
   what_we_are_most_proud_of: >         # Optional but recommended — guides judges to your best work
-    Replace with what aspect of the submission you consider strongest
-    and want judges to pay special attention to.
+    We are most proud of the strict architectural separation between our deterministic Machine Learning models and the generative AI (IBM Bob) layer. By supplying only constrained, verified SHAP metrics and probabilities to the LLM, we achieved a highly interpretable, hallucination-free intelligence layer suited for strict manufacturing environments.
 
   known_limitations: >                 # Optional but recommended — be honest about gaps
-    Replace with any known limitations, incomplete features,
-    or shortcuts taken due to time constraints.
+    Authentication is currently mocked and not production-ready. The WM-811K and SECOM datasets are fundamentally independent; our demo mapping layers them together purely to demonstrate multimodal capabilities. Local execution relies on CPU inference for models; scaling would require GPU environments.
 
 # =============================================================================
 # ARTIFACT LOCATIONS
