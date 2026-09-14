@@ -1,5 +1,9 @@
 import numpy as np
-import shap
+try:
+    import shap
+    HAS_SHAP = True
+except ImportError:
+    HAS_SHAP = False
 from typing import List
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -19,47 +23,61 @@ class RootCauseService:
         explainer_method = "shap_kernel_zero_bg"
         shap_values = None
 
-        try:
-            # Attempt to extract a RandomForest sub-estimator to use fast TreeExplainer
-            rf_estimator = None
-            if hasattr(model_service.secom_model, "estimators_"):
-                for est in model_service.secom_model.estimators_:
-                    if est.__class__.__name__ in ("RandomForestClassifier", "XGBClassifier"):
-                        rf_estimator = est
-                        break
-            
-            if rf_estimator is not None:
-                explainer = shap.TreeExplainer(rf_estimator)
-                shap_vals = explainer.shap_values(features)
+        if HAS_SHAP:
+            try:
+                # Attempt to extract a RandomForest sub-estimator to use fast TreeExplainer
+                rf_estimator = None
+                if hasattr(model_service.secom_model, "estimators_"):
+                    for est in model_service.secom_model.estimators_:
+                        if est.__class__.__name__ in ("RandomForestClassifier", "XGBClassifier"):
+                            rf_estimator = est
+                            break
                 
-                if isinstance(shap_vals, list):
-                    # For binary classification (RandomForest), shap_values is a list [class_0, class_1]
-                    shap_values = shap_vals[1][0] 
-                else:
-                    if shap_vals.ndim == 2:
-                        shap_values = shap_vals[0]
-                    elif shap_vals.ndim == 3:
-                        shap_values = shap_vals[:, :, 1][0]
-                explainer_method = f"shap_tree_{rf_estimator.__class__.__name__.lower()}"
-        except Exception:
-            shap_values = None
+                if rf_estimator is not None:
+                    explainer = shap.TreeExplainer(rf_estimator)
+                    shap_vals = explainer.shap_values(features)
+                    
+                    if isinstance(shap_vals, list):
+                        shap_values = shap_vals[1][0] 
+                    else:
+                        if shap_vals.ndim == 2:
+                            shap_values = shap_vals[0]
+                        elif shap_vals.ndim == 3:
+                            shap_values = shap_vals[:, :, 1][0]
+                    explainer_method = f"shap_tree_{rf_estimator.__class__.__name__.lower()}"
+            except Exception:
+                shap_values = None
+
+            if shap_values is None:
+                try:
+                    # Fallback: KernelExplainer on the VotingClassifier's predict_proba
+                    background = np.zeros((1, features.shape[1]))
+                    def predict_fn(x):
+                        return model_service.secom_model.predict_proba(x)[:, 1]
+                        
+                    explainer = shap.KernelExplainer(predict_fn, background)
+                    shap_vals = explainer.shap_values(features)
+                    
+                    if isinstance(shap_vals, list):
+                        shap_values = shap_vals[1][0]
+                    else:
+                        shap_values = shap_vals[0] if shap_vals.ndim > 1 else shap_vals
+                    
+                    explainer_method = "shap_kernel_zero_bg"
+                except Exception:
+                    shap_values = None
 
         if shap_values is None:
-            # Fallback: KernelExplainer on the VotingClassifier's predict_proba
-            # Use a zero-baseline since no background distribution is explicitly provided
-            background = np.zeros((1, features.shape[1]))
-            def predict_fn(x):
-                return model_service.secom_model.predict_proba(x)[:, 1]
-                
-            explainer = shap.KernelExplainer(predict_fn, background)
-            shap_vals = explainer.shap_values(features)
-            
-            if isinstance(shap_vals, list):
-                shap_values = shap_vals[1][0]
-            else:
-                shap_values = shap_vals[0] if shap_vals.ndim > 1 else shap_vals
-            
-            explainer_method = "shap_kernel_zero_bg"
+            # Empirical sensitivity perturbation fallback
+            base_risk = model_service.predict_process_risk(features[0])
+            base_prob = base_risk.get("failure_probability") or 0.5
+            shap_values = np.zeros(features.shape[1])
+            for i in range(features.shape[1]):
+                perturbed = features.copy()
+                perturbed[0, i] = 0.0
+                p_pert = model_service.predict_process_risk(perturbed[0]).get("failure_probability") or 0.5
+                shap_values[i] = float(base_prob - p_pert)
+            explainer_method = "empirical_sensitivity_delta"
 
         abs_contribs = np.abs(shap_values)
         top_indices = np.argsort(abs_contribs)[-limit:][::-1]

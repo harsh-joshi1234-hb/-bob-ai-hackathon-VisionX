@@ -34,19 +34,25 @@ def generate_mock_wafer_image(path: str):
     np.save(path, wafer)
 
 def seed_database():
-    # Ensure tables are created (already done via alembic, but just in case)
-    # Base.metadata.create_all(bind=engine)
+    # Ensure tables are created
+    Base.metadata.create_all(bind=engine)
     
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'demo'))
     os.makedirs(data_dir, exist_ok=True)
     
+    from app.services.demo_data_service import demo_data_service
+    
     with Session(engine) as db:
+        # Populate demo lots LOT-001, LOT-002, LOT-003
+        demo_data_service.seed_demo_mappings(db, data_dir)
+        print("Demo lot mappings LOT-001, LOT-002, LOT-003 seeded.")
+
         # Check if already seeded
-        if db.query(Lot).count() > 0:
-            print("Database already contains lots. Skipping seed.")
+        if db.query(Lot).count() > 3:
+            print("Database already contains demo lots. Skipping additional seed.")
             return
 
-        print("Seeding database with demo lots...")
+        print("Seeding database with additional lots...")
         
         # Lot 1
         lot1 = Lot(lot_id="LOT-2024-A100", status=LotStatus.PENDING)
