@@ -7,7 +7,8 @@ We have implemented a relational schema utilizing PostgreSQL and SQLAlchemy, man
 
 ### Core Tables:
 - **`lots`**: Stores semiconductor lot identifiers and current analysis status. Includes `wafer_image_path` linking to `.npy` arrays.
-- **`process_records`**: Stores the 24-feature sensor data associated with a lot.
+- **`upcoming_batches`**: Tracks scheduled future production lots pre-screened by the risk pipeline before manufacture.
+- **`process_records`**: Stores the 24-feature sensor data associated with a lot or an upcoming batch.
 - **`predictions`**: Stores inference results from both the SECOM Classifier and the WaferMap CNN.
 - **`analysis_runs`**: Tracks the execution and status of a specific `/analyze` request.
 - **`root_cause_analysis`**: Stores the top contributing sensor features responsible for a failure prediction.
@@ -40,12 +41,35 @@ This is the core business logic endpoint. Its execution flow is as follows:
 3. **Inference Execution**:
    - Calls `model_service.predict_wafer()` to get the defect pattern (e.g., "Center", "Donut", "none") and confidence score.
    - Calls `model_service.predict_secom()` to predict "PASS" or "FAIL".
-4. **Root-Cause Analysis (RCA)**: Dynamically extracts feature importances from the `RandomForest` sub-estimator within the VotingClassifier to identify the top 3 critical sensor features driving the prediction.
+4. **Root-Cause Analysis (RCA)**: Computes feature contributions dynamically via `RootCauseService`. It attempts to use `shap.TreeExplainer` on an extracted sub-estimator or falls back to `shap.KernelExplainer` with a zero-baseline on the `VotingClassifier`.
 5. **Risk Assessment**: Computes an `overall_risk` score (Low, Medium, High) by weighting the probabilities of both models.
 6. **Data Persistence**: Inserts the predictions, RCA, and generated recommendations back into the PostgreSQL database.
 7. **Response**: Returns a comprehensive, Pydantic-validated JSON payload containing all analysis data.
 
-## 4. Next Steps for Development
+### `GET /api/lots/{lot_id}/root-causes`
+Returns the ranked top contributing sensor features (SHAP values) that drove the SECOM failure prediction, specifying the exact magnitude and direction (`increases_risk`, `decreases_risk`, or `neutral`).
+
+### `GET /api/batches/upcoming`
+Queries PostgreSQL to return a summary list of all scheduled upcoming batches that have been pre-screened.
+
+### `GET /api/batches/{batch_id}`
+Returns detailed information for a specific upcoming batch, including projected sensor values and scheduled times.
+
+### `POST /api/batches/{batch_id}/analyze`
+Analyzes an upcoming batch for manufacturing risk before processing.
+1. Extracts projected parameters and runs SECOM inference.
+2. Applies risk thresholds (`HIGH`, `MEDIUM`, `LOW`).
+3. Uses `RootCauseService` to identify historically correlated signals without falsely claiming causation.
+4. Updates the database and returns a comprehensive dashboard-ready JSON response detailing `risk`, `top_signals`, `reason`, and `recommended_action`.
+
+## 4. AI Explanation Layer (IBM Bob)
+To bridge the gap between ML outputs and engineering insights, we integrated an LLM intelligence layer via `AIExplanationService` connecting to IBM watsonx.ai.
+- **Strict Role**: The LLM *never* makes numerical ML predictions. It only receives verified metrics (SHAP, probabilities) and synthesizes them into an executive summary, root cause explanation, and actionable next steps.
+- **Safety First**: Implemented robust prompt constraints preventing hallucination of defect classes, sensor meanings, or false causal relationships.
+- **Testable Fallback**: The API returns a clean service-unavailable state rather than fabricating responses if the API credentials are not configured in `.env`.
+- **Documentation**: See `IBM_BOB_INTEGRATION.md` for full details.
+
+## 5. Next Steps for Development
 1. **Frontend Integration**: A React/Next.js frontend can now be built against the `GET /api/lots` and `POST /api/lots/{lot_id}/analyze` endpoints.
 2. **Error Handling & Edge Cases**: Further refinement of how the orchestrator handles missing images or incomplete sensor data.
 3. **Data Storage**: Transitioning `.npy` files from local disk paths to cloud Object Storage (e.g., AWS S3) if required.

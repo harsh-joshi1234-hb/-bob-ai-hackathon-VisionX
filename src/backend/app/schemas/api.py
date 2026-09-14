@@ -39,4 +39,5 @@ class AnalysisResponse(BaseModel):
     root_causes: List[RootCauseSchema]
     overall_risk: OverallRiskSchema
     recommendations: List[RecommendationSchema]
+    ai_explanation: Optional[Dict[str, Any]] = None
     analysis_timestamp: datetime

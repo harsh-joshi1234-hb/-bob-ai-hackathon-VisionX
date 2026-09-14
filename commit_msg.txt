@@ -1,0 +1,27 @@
+feat: implement Root Cause Analysis, Batch Risk Monitoring, and IBM LLM Integration
+
+This commit completes the final phases (5 through 8) of the S1 Semiconductor AI Analyzer for the hackathon submission.
+
+Phase 5: Root Cause Analysis (SHAP)
+- Implemented `RootCauseService` using SHAP to dynamically rank contributing sensor features from the SECOM model.
+- Added `GET /api/lots/{lot_id}/root-causes` endpoint to retrieve top contributing features with magnitude and direction.
+
+Phase 6: Upcoming Batch Risk Monitoring
+- Implemented `BatchRiskService` and `Batches` API router to apply SECOM model inference to pre-screen scheduled future lots.
+- Defined transparent risk thresholds (HIGH, MEDIUM, LOW) based on model probabilities.
+- Separated numerical prediction output from historical feature correlation to avoid false causal claims.
+
+Phase 7: IBM Bob LLM Integration (watsonx.ai)
+- Created `AIExplanationService` that securely connects to IBM watsonx.ai to generate structured insights from raw ML metrics.
+- Added strict prompting constraints to prevent hallucination of probabilities, defect classes, or sensor definitions.
+- Supported graceful fallback to return a `service-unavailable` state rather than faking an LLM response.
+- Added `IBM_BOB_INTEGRATION.md` detailing the setup and architecture.
+
+Phase 8: Demonstration Data & Integration Layer
+- Implemented `DemoDataService` and `demo_lot_mappings` database table to map application-level demo lots (e.g. `LOT-001`) to inputs from the disparate WM-811K and SECOM datasets.
+- Connected the LLM explanation service into the primary `/api/lots/{lot_id}/analyze` orchestration flow.
+
+Documentation
+- Updated the root `README.md` to include full VisionX team details, Tech Stack, and watsonx.ai setup instructions.
+- Updated `walkthrough.md` with descriptions of the new API endpoints and LLM layer.
+- Included unit tests for `RootCauseService` and `BatchRiskService`.

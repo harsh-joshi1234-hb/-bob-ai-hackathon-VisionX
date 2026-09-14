@@ -12,6 +12,8 @@ from app.schemas.api import (
     RootCauseSchema, OverallRiskSchema, RecommendationSchema
 )
 from app.services.model_service import model_service
+from app.services.root_cause_service import root_cause_service
+from app.services.ai_explanation_service import ai_explanation_service
 from datetime import datetime, timezone
 import numpy as np
 import os
@@ -54,6 +56,10 @@ def get_lot(lot_id: str, db: Session = Depends(get_db)):
 def analyze_lot(lot_id: str, db: Session = Depends(get_db)):
     """
     Main orchestration endpoint to analyze a lot using both models.
+    
+    Note: Demo lot IDs (e.g. LOT-001) are application-level integration identifiers 
+    used to demonstrate multimodal analysis across independent public datasets 
+    (WM-811K and SECOM). They do not represent real physical lots.
     """
     # Step 1: Load lot
     lot = db.query(Lot).filter(Lot.lot_id == lot_id).first()
@@ -124,32 +130,22 @@ def analyze_lot(lot_id: str, db: Session = Depends(get_db)):
         # Step 7: Run root-cause analysis
         root_causes = []
         try:
-            # Try to extract feature importances from the RandomForest sub-estimator in VotingClassifier
-            rf_estimator = model_service.secom_model.estimators_[0] 
-            importances = rf_estimator.feature_importances_
-            
-            # Get top 3 features
-            top_indices = np.argsort(importances)[-3:][::-1]
-            for rank, idx in enumerate(top_indices):
-                feat_val = features[idx]
-                direction = ContributionDirection.POSITIVE if feat_val > 0 else ContributionDirection.NEGATIVE
-                
-                rc = RootCauseAnalysis(
-                    lot_id=lot.id,
-                    analysis_run_id=run.id,
-                    feature_name=f"feature_{idx:02d}",
-                    contribution_score=float(importances[idx]),
-                    direction=direction,
-                    rank=rank+1
-                )
-                db.add(rc)
+            rca_entries = root_cause_service.analyze_root_causes(
+                lot_id=lot.id,
+                process_features=features,
+                run_id=run.id,
+                db=db,
+                limit=5
+            )
+            for rc in rca_entries:
                 root_causes.append(RootCauseSchema(
                     feature_name=rc.feature_name,
-                    importance=rc.contribution_score,
+                    importance=rc.contribution_value,
                     direction=rc.direction.value
                 ))
-        except Exception:
-            # Fallback if extraction fails
+        except Exception as e:
+            # Fallback if RCA fails
+            print(f"RCA Failed: {str(e)}")
             pass
 
         # Step 8: Generate overall risk assessment
@@ -191,6 +187,21 @@ def analyze_lot(lot_id: str, db: Session = Depends(get_db)):
         
         db.commit()
 
+        # Step 9: Optionally call LLM for explanation
+        try:
+            explanation = ai_explanation_service.generate_explanation(
+                lot_id=lot.lot_id,
+                wafer_prediction=wafer_pred,
+                wafer_confidence=wafer_conf,
+                process_prediction=secom_pred,
+                process_probability=secom_prob,
+                shap_rankings=[{"feature": rc.feature_name, "contribution": rc.importance} for rc in root_causes],
+                historical_comparison=None,
+                upcoming_batch_risk=None
+            )
+        except Exception as e:
+            explanation = {"status": "unavailable", "message": f"Explanation service failed: {str(e)}"}
+            
         # Step 10: Return structured response
         return AnalysisResponse(
             lot_id=lot.lot_id,
@@ -199,6 +210,7 @@ def analyze_lot(lot_id: str, db: Session = Depends(get_db)):
             root_causes=root_causes,
             overall_risk=OverallRiskSchema(level=risk_level, score=risk_score),
             recommendations=recommendations,
+            ai_explanation=explanation,
             analysis_timestamp=datetime.now(timezone.utc)
         )
         
@@ -209,3 +221,33 @@ def analyze_lot(lot_id: str, db: Session = Depends(get_db)):
         lot.status = LotStatus.FAILED
         db.commit()
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+@router.get("/{lot_id}/root-causes")
+def get_root_causes(lot_id: str, db: Session = Depends(get_db)):
+    """Returns the top contributing features for the lot's analysis."""
+    lot = db.query(Lot).filter(Lot.lot_id == lot_id).first()
+    if not lot:
+        raise HTTPException(status_code=404, detail="Lot not found")
+        
+    rca_entries = db.query(RootCauseAnalysis).filter(
+        RootCauseAnalysis.lot_id == lot.id
+    ).order_by(RootCauseAnalysis.rank).all()
+    
+    result = []
+    for rca in rca_entries:
+        if rca.direction == ContributionDirection.POSITIVE:
+            direction_str = "increases_risk"
+        elif rca.direction == ContributionDirection.NEGATIVE:
+            direction_str = "decreases_risk"
+        else:
+            direction_str = "neutral"
+            
+        result.append({
+            "feature": rca.feature_name,
+            "contribution": round(rca.contribution_value, 4),
+            "direction": direction_str,
+            "rank": rca.rank
+        })
+        
+    return {"root_causes": result}
+

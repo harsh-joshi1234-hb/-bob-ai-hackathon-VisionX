@@ -1,6 +1,4 @@
-# 🚀 [Your Project Title Here]
-
-> ⚠️ **Replace everything in `[ ]` brackets with your actual content before submission.**
+# 🚀 S1 Semiconductor AI Analyzer
 
 ---
 
@@ -8,36 +6,32 @@
 
 | Field | Value |
 |---|---|
-| **Team Name** | [Your Team Name] |
-| **Track** | [AI / DevOps / Sustainability / Open] |
-| **Team Lead** | [Name] — [email@ibm.com] |
-| **Members** | [Name 1], [Name 2], [Name 3] |
+| **Team Name** | VisionX |
+| **Track** | AI |
+| **Team Lead** | Harsh Joshi — harsh@ibm.com |
+| **Members** | Harsh Joshi |
 
 ---
 
 ## 🎯 Problem Statement
 
-> In 2–3 sentences: What problem does your project solve? Who experiences this problem?
-
-[Describe the real-world problem your project addresses. Be specific about who the user is and what pain point they face.]
+Semiconductor manufacturing yields are critically impacted by micro-defects and sensor anomalies that are difficult to trace across disparate datasets. Engineers struggle to rapidly correlate wafer defect patterns with out-of-control process sensors, leading to prolonged downtimes and reduced manufacturing efficiency.
 
 ---
 
 ## 💡 Solution
 
-> In 2–3 sentences: What did you build? How does it solve the problem above?
-
-[Describe your solution clearly. Explain the core mechanism — what makes it work.]
+We built a multimodal AI analysis pipeline that seamlessly integrates wafer map defect classification (WM-811K) with sensor parameter risk prediction (SECOM dataset). Our solution dynamically ranks root causes using SHAP and leverages an IBM watsonx.ai LLM layer (IBM Bob) to generate actionable, human-readable insights for process engineers.
 
 ---
 
 ## ✨ Key Features
 
-- **Feature 1:** [Brief description — e.g., "Real-time anomaly detection using watsonx.ai"]
-- **Feature 2:** [Brief description]
-- **Feature 3:** [Brief description]
-- **Feature 4:** [Optional]
-- **Feature 5:** [Optional]
+- **Feature 1:** Multimodal Orchestration: Combines a PyTorch CNN for Wafer Map Defects and an XGBoost VotingClassifier for Process Risk.
+- **Feature 2:** Root Cause Analysis: Calculates SHAP feature contributions dynamically to isolate failing sensors.
+- **Feature 3:** Upcoming Batch Risk Monitoring: Pre-screens scheduled lots and flags elevated failure probabilities.
+- **Feature 4:** IBM Bob Intelligence Layer: Translates strict ML metrics into executive summaries without hallucinating causal claims.
+- **Feature 5:** Transparent Data Mapping: Demonstrates integration across independent public datasets using application-level demo lots.
 
 ---
 
@@ -45,11 +39,11 @@
 
 | Category | Technologies |
 |---|---|
-| **Languages** | [e.g., Python, TypeScript] |
-| **Frameworks** | [e.g., FastAPI, React] |
-| **IBM Technologies** | [e.g., watsonx.ai, IBM Bob, IBM Cloud] |
-| **Databases** | [e.g., PostgreSQL, Redis] |
-| **Other** | [e.g., Docker, GitHub Actions] |
+| **Languages** | Python |
+| **Frameworks** | FastAPI, PyTorch, Scikit-learn, XGBoost |
+| **IBM Technologies** | watsonx.ai (IBM Bob) |
+| **Databases** | PostgreSQL, SQLAlchemy |
+| **Other** | Alembic, SHAP |
 
 ---
 
@@ -57,6 +51,7 @@
 
 ```
 ├── src/                  # All source code
+│   └── backend/          # FastAPI backend services and DB models
 ├── docs/                 # Written documentation
 │   ├── problem-statement.md
 │   ├── solution-overview.md
@@ -73,22 +68,26 @@
 
 ## ⚡ How to Run
 
-> **Copy these exact steps from your [`docs/setup-guide.md`](docs/setup-guide.md)**
-
 ```bash
 # 1. Clone the repo
-git clone https://github.com/[your-repo].git
-cd [your-repo]
+git clone https://github.com/harsh-joshi1234-hb/-bob-ai-hackathon-VisionX.git
+cd -bob-ai-hackathon-VisionX/src/backend
 
 # 2. Install dependencies
-[your install command here]
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 
 # 3. Configure environment
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your values including DATABASE_URL
 
-# 4. Run the project
-[your run command here]
+# 4. Run database migrations and seed data
+alembic upgrade head
+python scripts/seed_demo_data.py
+
+# 5. Run the project
+uvicorn app.main:app --reload
 ```
 
 ---
@@ -97,25 +96,36 @@ cp .env.example .env
 
 | Artifact | Link |
 |---|---|
-| 📹 Demo Video | [See demo/demo-video-link.txt](demo/demo-video-link.txt) |
-| 🌐 Live Demo | [See demo/live-demo-url.txt](demo/live-demo-url.txt) |
-| 🖼️ Screenshots | [See demo/screenshots/](demo/screenshots/) |
-| 📊 Presentation | [See presentation/slides.pdf](presentation/) |
+| 📹 Demo Video | See demo/demo-video-link.txt |
+| 🌐 Live Demo | See demo/live-demo-url.txt |
+| 🖼️ Screenshots | See demo/screenshots/ |
+| 📊 Presentation | See presentation/slides.pdf |
 
 ---
 
 ## ⚠️ Known Limitations
 
-> Be honest — judges appreciate transparency over overclaiming.
-
-- [Limitation 1: e.g., "Authentication is mocked — not production-ready"]
-- [Limitation 2: e.g., "Only tested on Chrome"]
-- [Limitation 3: e.g., "Feature X is scaffolded but not fully implemented"]
+- Authentication is currently mocked and not production-ready.
+- The WM-811K and SECOM datasets are fundamentally independent; our demo mapping layers them together purely to demonstrate multimodal capabilities.
+- Local execution relies on CPU inference for models; scaling would require GPU environments.
 
 ---
 
 ## 🏅 What We're Most Proud Of
 
-[Tell the judges what part of your submission is strongest and worth paying close attention to.]
+We are most proud of the strict architectural separation between our deterministic Machine Learning models and the generative AI (IBM Bob) layer. By supplying only constrained, verified SHAP metrics and probabilities to the LLM, we achieved a highly interpretable, hallucination-free intelligence layer suited for strict manufacturing environments.
 
 ---
+
+## 🔑 IBM watsonx.ai Credentials Integration
+
+To enable the IBM Bob LLM layer, you need a free API key from IBM Cloud:
+1. Sign up for a free IBM Cloud account at cloud.ibm.com.
+2. Provision a watsonx.ai or Watson Machine Learning instance.
+3. Create an API Key in Manage > Access (IAM) > API Keys.
+4. Find your Project ID in the watsonx.ai project settings.
+Add these to your `src/backend/.env` file:
+```env
+WATSONX_API_KEY=your_ibm_api_key_here
+WATSONX_PROJECT_ID=your_ibm_project_id_here
+```

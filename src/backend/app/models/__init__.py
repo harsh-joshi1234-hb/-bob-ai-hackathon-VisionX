@@ -9,6 +9,7 @@ from app.models.root_cause_analysis import RootCauseAnalysis
 from app.models.recommendation import Recommendation
 from app.models.upcoming_batch import UpcomingBatch
 from app.models.analysis_run import AnalysisRun
+from app.models.demo_lot_mapping import DemoLotMapping
 
 __all__ = [
     "Lot",
