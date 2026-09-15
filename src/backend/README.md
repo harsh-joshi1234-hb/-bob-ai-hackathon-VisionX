@@ -41,10 +41,12 @@ This guide explains how to set up the backend for the S1 Semiconductor AI Analyz
    cp .env.example .env
    ```
    
-2. **Configure Database Credentials:**
-   Open `.env` and update the `DATABASE_URL` to match your local PostgreSQL credentials. For example:
+2. **Configure Database & IBM Credentials:**
+   Open `.env` and update the `DATABASE_URL` to match your local PostgreSQL credentials. Also, add your IBM watsonx.ai credentials for the IBM Bob LLM layer:
    ```env
    DATABASE_URL="postgresql+psycopg2://postgres:YOUR_PASSWORD@localhost:5432/s1_wafer_db"
+   WATSONX_API_KEY="your_ibm_api_key_here"
+   WATSONX_PROJECT_ID="your_ibm_project_id_here"
    ```
    *(Ensure you have created a database named `s1_wafer_db` in pgAdmin or via `createdb`)*
 

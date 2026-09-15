@@ -8,8 +8,8 @@
 |---|---|
 | **Team Name** | VisionX |
 | **Track** | AI |
-| **Team Lead** | Harsh Joshi — harsh@ibm.com |
-| **Members** | Harsh Joshi |
+| **Team Lead** | Harsh Joshi — 24dce049@charusat.edu.in |
+| **Members** | Harsh Joshi | Ayaan Mansuri  | Dipak Karangiya | Priyanshi Pojara |
 
 ---
 
@@ -105,9 +105,12 @@ uvicorn app.main:app --reload
 
 ## ⚠️ Known Limitations
 
-- Authentication is currently mocked and not production-ready.
-- The WM-811K and SECOM datasets are fundamentally independent; our demo mapping layers them together purely to demonstrate multimodal capabilities.
-- Local execution relies on CPU inference for models; scaling would require GPU environments.
+- **Authentication:** Currently mocked and not production-ready.
+- **Independent Public Datasets & Demo Lot Mappings:** The WM-811K (wafer maps) and SECOM (process sensors) datasets are fundamentally independent. Our demo mapping layers them together purely to demonstrate the multimodal capabilities of our platform via application-level demo lots.
+- **Anonymous Process Features:** The SECOM dataset uses anonymized sensor features (e.g., Feature_59), meaning the LLM's recommended corrective actions are structurally sound but rely on abstract sensor names rather than specific real-world equipment tags.
+- **Model Limitations:** Local execution relies on CPU inference for models; scaling would require GPU environments for real-time high-volume inference.
+- **Probability Availability:** Exact failure probabilities are estimates based on the XGBoost voting classifier's calibration on the unbalanced SECOM dataset.
+- **LLM Limitations:** While IBM Bob is restricted from making up causal claims, its recommendations are generated based solely on SHAP outputs. It cannot verify physical equipment state beyond the provided data metrics.
 
 ---
 
