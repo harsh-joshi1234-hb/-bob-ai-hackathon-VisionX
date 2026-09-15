@@ -97,7 +97,6 @@ uvicorn app.main:app --reload
 | Artifact | Link |
 |---|---|
 | 📹 Demo Video | See demo/demo-video-link.txt |
-| 🌐 Live Demo | See demo/live-demo-url.txt |
 | 🖼️ Screenshots | See demo/screenshots/ |
 | 📊 Presentation | See presentation/slides.pdf |
 
