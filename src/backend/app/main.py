@@ -5,7 +5,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health, lots, batches
+from app.api import health, lots, batches, analyze, models, analyses
 from app.services.model_service import model_service
 
 app = FastAPI(
@@ -38,6 +38,9 @@ def load_ml_models():
 app.include_router(health.router)
 app.include_router(lots.router)
 app.include_router(batches.router)
+app.include_router(analyze.router)
+app.include_router(models.router)
+app.include_router(analyses.router)
 
 if __name__ == "__main__":
     import uvicorn

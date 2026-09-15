@@ -150,13 +150,18 @@ class ModelService:
         if wafer_2d.ndim != 2:
             raise ValueError(f"Expected 2D array for Wafer Map, but got {wafer_2d.ndim}D array.")
             
-        # Preprocessing: resize to 64x64 with INTER_NEAREST, scale by / 2.0
+        # Preprocessing: resize to 64x64 with INTER_NEAREST
         resized = cv2.resize(
             wafer_2d,
             (64, 64),
             interpolation=cv2.INTER_NEAREST
         )
         
+        # If the uploaded image has values in 0-255 (e.g. standard images), quantize to 0, 1, 2
+        if resized.max() > 2.0:
+            # Map [0, 255] roughly to 0, 1, 2
+            resized = np.round((resized / 255.0) * 2.0)
+            
         tensor = torch.tensor(resized / 2.0, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
         timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
         
