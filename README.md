@@ -7,7 +7,7 @@
 | Field | Value |
 |---|---|
 | **Team Name** | VisionX |
-| **Track** | AI | Full Stack |
+| **Track** | AI , Full Stack |
 | **Team Lead** | Harsh Joshi — 24dce049@charusat.edu.in |
 | **Members** | Harsh Joshi, Ayaan Mansuri, Dipak Karangiya, Priyanshi Pojara |
 
